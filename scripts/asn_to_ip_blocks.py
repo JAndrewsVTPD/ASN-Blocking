@@ -1,26 +1,15 @@
 import sys
-import dns.resolver
+import requests
 
 def get_prefixes_for_asn(asn):
-    resolver = dns.resolver.Resolver()
-    resolver.timeout = 5
-    resolver.lifetime = 5
-
-    query = f'AS{asn}.asn.cymru.com'
-    try:
-        answers = resolver.resolve(query, 'TXT')
-        prefixes = []
-        for rdata in answers:
-            decoded = rdata.to_text().strip('"')
-            # Each record contains: ASN | IP Prefix | CC | RIR | Date
-            parts = decoded.split('|')
-            if len(parts) >= 2:
-                prefix = parts[1].strip()
-                prefixes.append(prefix)
-        return prefixes
-    except Exception as e:
-        print(f"Lookup failed for ASN {asn}: {e}")
+    url = f"https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS{asn}"
+    response = requests.get(url)
+    if response.status_code != 200:
+        print(f"Failed to retrieve data for ASN {asn}: {response.status_code}")
         return []
+    data = response.json()
+    prefixes = [item['prefix'] for item in data['data']['prefixes']]
+    return prefixes
 
 def write_to_file(prefixes, filename):
     with open(filename, 'w') as f:

@@ -1,4 +1,4 @@
-name: ASN Lookup
+name: ASN Lookup and Update File
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
         default: '215540'
 
 jobs:
-  lookup:
+  lookup_and_update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,12 +22,14 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Run ASN to IP block script
+      - name: Run ASN lookup and update script
         run: |
           python scripts/asn_to_ip_blocks.py ${{ github.event.inputs.asn }}
 
-      - name: Upload result as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: asn-${{ github.event.inputs.asn }}-blocks
-          path: asn_${{ github.event.inputs.asn }}_blocks.txt
+      - name: Commit and push updated asn_block1.1.txt
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add asn_block1.1.txt
+          git commit -m "Update asn_block1.1.txt with new ASN ${{ github.event.inputs.asn }} blocks" || echo "No changes to commit"
+          git push
